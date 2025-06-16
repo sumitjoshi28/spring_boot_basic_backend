@@ -5,6 +5,8 @@ import com.sumit.spring_boot_crash_course.database.repository.NoteRepository
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import org.bson.types.ObjectId
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.web.PagedModel
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 
@@ -56,11 +59,15 @@ class NoteController (
 
     @GetMapping
     fun findByOwnerId(
-        ownerId: String = SecurityContextHolder.getContext().authentication.principal as String
-    ):List<NoteResponse>{
-        return repository.findByOwnerId(ObjectId(ownerId)).map {
+        ownerId: String = SecurityContextHolder.getContext().authentication.principal as String,
+        @RequestParam(value = "page", defaultValue = "0") page: Int = 0,
+        @RequestParam(value = "size", defaultValue = "10") size: Int = 0,
+    ): PagedModel<NoteResponse>{
+        val pageable = PageRequest.of(page, size)
+        val pageResult = repository.findByOwnerId(ObjectId(ownerId), pageable = pageable).map {
             it.toResponse()
         }
+        return PagedModel(pageResult)
     }
 
     @DeleteMapping(path = ["/{id}"])
